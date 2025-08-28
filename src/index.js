@@ -203,7 +203,14 @@ app.get('/api/mailgun/events', async (req, res) => {
     const { limit = 50, event_type } = req.query;
     
     const baseUrl = 'https://api.mailgun.net/v3';
-    const apiKey = 'REDACTED_API_KEY';
+    const apiKey = process.env.MAILGUN_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(500).json({
+        error: 'Mailgun API key not configured',
+        message: 'Please set MAILGUN_API_KEY environment variable'
+      });
+    }
     
     let url = `${baseUrl}/events?limit=${limit}`;
     if (event_type) url += `&event=${event_type}`;
@@ -248,7 +255,14 @@ app.get('/api/mailgun/events', async (req, res) => {
 app.get('/api/mailgun/domains', async (req, res) => {
   try {
     const baseUrl = 'https://api.mailgun.net/v3';
-    const apiKey = 'REDACTED_API_KEY';
+    const apiKey = process.env.MAILGUN_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(500).json({
+        error: 'Mailgun API key not configured',
+        message: 'Please set MAILGUN_API_KEY environment variable'
+      });
+    }
     
     const response = await axios.get(`${baseUrl}/domains`, {
       headers: {
@@ -289,7 +303,14 @@ app.get('/api/mailgun/stats', async (req, res) => {
     const { domain = 'mg.erosmate.ai', duration = '7d' } = req.query;
     
     const baseUrl = 'https://api.mailgun.net/v3';
-    const apiKey = 'REDACTED_API_KEY';
+    const apiKey = process.env.MAILGUN_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(500).json({
+        error: 'Mailgun API key not configured',
+        message: 'Please set MAILGUN_API_KEY environment variable'
+      });
+    }
     
     const url = `${baseUrl}/${domain}/stats/total?event=accepted&event=delivered&event=failed&event=opened&event=clicked&duration=${duration}&resolution=day`;
     
@@ -363,7 +384,14 @@ app.get('/api/mailgun/suppressions', async (req, res) => {
     const { domain = 'mg.erosmate.ai', type = 'bounces' } = req.query;
     
     const baseUrl = 'https://api.mailgun.net/v3';
-    const apiKey = 'REDACTED_API_KEY';
+    const apiKey = process.env.MAILGUN_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(500).json({
+        error: 'Mailgun API key not configured',
+        message: 'Please set MAILGUN_API_KEY environment variable'
+      });
+    }
     
     const url = `${baseUrl}/${domain}/${type}`;
     

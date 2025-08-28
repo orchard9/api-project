@@ -1,85 +1,130 @@
-# API Project
+# Mailgun Data Platform
 
-A Node.js Express API server with essential middleware and structure.
+A comprehensive platform for accessing and visualizing Mailgun email data with both web dashboard and CLI export capabilities.
 
-## Features
+## 🚀 Features
 
-- Express.js server with security middleware (Helmet)
-- CORS enabled for cross-origin requests
-- Request logging with Morgan
-- Environment variable support with dotenv
-- Basic error handling
-- Sample endpoints for testing
-- Development auto-reload with nodemon
+- **Web Dashboard**: Real-time data visualization from Mailgun API
+- **CLI Export System**: Complete data export for all Mailgun data types  
+- **Interactive Controls**: Manual/auto-refresh toggle
+- **Mobile Responsive**: Works across all device sizes
+- **Rate Limited**: Compliant with Mailgun API limits (300 requests/minute)
 
-## Quick Start
+## ⚡ Quick Start
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+### 1. Setup Environment
 
-2. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   ```
-   Edit `.env` with your configuration.
+```bash
+# Copy the example environment file
+cp .env.example .env
 
-3. **Start development server:**
-   ```bash
-   npm run dev
-   ```
-
-4. **Or start production server:**
-   ```bash
-   npm start
-   ```
-
-## Available Endpoints
-
-- `GET /` - Server status and info
-- `GET /health` - Health check endpoint
-- `GET /api/data` - Sample data endpoint
-
-## Project Structure
-
-```
-api-project/
-├── src/
-│   ├── controllers/     # Route handlers
-│   ├── middleware/      # Custom middleware
-│   ├── routes/          # Route definitions
-│   └── index.js        # Main server file
-├── .env.example        # Environment variables template
-├── .gitignore         # Git ignore rules
-├── package.json       # Project dependencies and scripts
-└── README.md          # This file
+# Edit .env with your Mailgun credentials
+MAILGUN_API_KEY=your_actual_api_key_here
+MAILGUN_DOMAIN=your_domain_here
+MAILGUN_REGION=US
 ```
 
-## Scripts
+### 2. Install Dependencies
 
-- `npm start` - Start the production server
-- `npm run dev` - Start development server with auto-reload
-- `npm test` - Run tests (placeholder)
+```bash
+npm install
+cd mailgun-export && npm install
+```
 
-## Environment Variables
+### 3. Start the Server
 
-Copy `.env.example` to `.env` and configure:
+```bash
+npm start
+```
 
-- `PORT` - Server port (default: 3000)
-- `NODE_ENV` - Environment mode (development/production)
+### 4. Access the Platform
 
-## Development
+- **Dashboard**: http://localhost:3000/dashboard.html
+- **Setup Interface**: http://localhost:3000/credentials.html
+- **API Testing**: http://localhost:3000/test-dashboard.html
 
-The server runs on port 3000 by default. Visit:
-- http://localhost:3000 - API root
-- http://localhost:3000/health - Health check
-- http://localhost:3000/api/data - Sample data
+## 🛠 CLI Export Usage
 
-## Next Steps
+```bash
+cd mailgun-export
 
-- Add database integration
-- Implement authentication
-- Add more API endpoints
-- Set up testing framework
-- Add API documentation
+# Test connection
+npm run test
+
+# Export all data types
+npm run export:all
+
+# Export specific data types
+npm run export:events
+npm run export:domains
+npm run export:stats
+npm run export:suppressions
+```
+
+## 📊 API Endpoints
+
+- `GET /api/mailgun/events` - Email events data
+- `GET /api/mailgun/domains` - Domain configuration  
+- `GET /api/mailgun/stats` - Email statistics
+- `GET /api/mailgun/suppressions` - Bounce/complaint data
+
+## 🔧 Configuration
+
+### Environment Variables
+
+- `MAILGUN_API_KEY` - Your Mailgun API key (required)
+- `MAILGUN_DOMAIN` - Your Mailgun domain (optional, defaults used)
+- `MAILGUN_REGION` - US or EU (optional, defaults to US)
+- `PORT` - Server port (optional, defaults to 3000)
+
+### Web Configuration
+
+Use the web interface at `/credentials.html` to:
+- Test API connection
+- Configure credentials  
+- Validate domain access
+- Save settings for CLI tool
+
+## 🚨 Security Notes
+
+- Never commit `.env` files to version control
+- API keys are stored locally only
+- Use environment variables for all sensitive data
+- Web interface includes connection testing
+
+## 📈 Performance
+
+- Real-time dashboard updates
+- Configurable refresh intervals
+- Rate limiting compliance
+- Efficient data pagination
+- Mobile-optimized interface
+
+## 🔍 Troubleshooting
+
+### API Connection Issues
+- Verify API key in `.env` file
+- Check domain permissions in Mailgun dashboard
+- Confirm region setting (US/EU)
+
+### Dashboard Not Loading
+- Check browser console for errors
+- Verify server is running on port 3000
+- Ensure API key is configured
+
+### CLI Export Failures
+- Run `npm run test` to verify connection
+- Check rate limiting settings
+- Verify output directory permissions
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📝 License
+
+This project is licensed under the MIT License.
