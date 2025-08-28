@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mailgun Test Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .section { background: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        button { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .error { background: #ffebee; color: #c62828; padding: 10px; border-radius: 4px; }
+        .success { background: #e8f5e8; color: #2e7d32; padding: 10px; border-radius: 4px; }
+        pre { background: #f0f0f0; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Mailgun API Test Dashboard</h1>
+    <p>This is a simple test page to debug API connectivity issues.</p>
+    
+    <div class="section">
+        <h2>Quick API Tests</h2>
+        <button onclick="testEvents()">Test Events API</button>
+        <button onclick="testDomains()">Test Domains API</button>
+        <button onclick="testStats()">Test Stats API</button>
+        <button onclick="testSuppressions()">Test Suppressions API</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div class="section">
+        <h2>Results</h2>
+        <div id="results">Click a test button above to see results...</div>
+    </div>
+    
+    <div class="section">
+        <h2>Console Debug</h2>
+        <p>Open your browser's Developer Tools (F12) and check the Console tab for detailed debug information.</p>
+    </div>
+    
+    <script>
+        console.log('🚀 Test dashboard JavaScript loaded successfully');
+        
+        function showResult(title, data, isError = false) {
+            const results = document.getElementById('results');
+            const className = isError ? 'error' : 'success';
+            const timestamp = new Date().toLocaleTimeString();
+            
+            results.innerHTML += `
+                <div class="${className}" style="margin-bottom: 10px;">
+                    <strong>[${timestamp}] ${title}</strong>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        async function testEvents() {
+            console.log('Testing Events API...');
+            try {
+                const response = await fetch('/api/mailgun/events?limit=3');
+                console.log('Events Response Status:', response.status);
+                
+                const data = await response.json();
+                console.log('Events Data:', data);
+                
+                if (response.ok) {
+                    showResult('✅ Events API Success', {
+                        count: data.count,
+                        sample: data.events?.slice(0, 2) || []
+                    });
+                } else {
+                    showResult('❌ Events API Error', data, true);
+                }
+            } catch (error) {
+                console.error('Events API Error:', error);
+                showResult('❌ Events API Network Error', { error: error.message }, true);
+            }
+        }
+        
+        async function testDomains() {
+            console.log('Testing Domains API...');
+            try {
+                const response = await fetch('/api/mailgun/domains');
+                console.log('Domains Response Status:', response.status);
+                
+                const data = await response.json();
+                console.log('Domains Data:', data);
+                
+                if (response.ok) {
+                    showResult('✅ Domains API Success', {
+                        count: data.count,
+                        domains: data.domains?.map(d => d.name) || []
+                    });
+                } else {
+                    showResult('❌ Domains API Error', data, true);
+                }
+            } catch (error) {
+                console.error('Domains API Error:', error);
+                showResult('❌ Domains API Network Error', { error: error.message }, true);
+            }
+        }
+        
+        async function testStats() {
+            console.log('Testing Stats API...');
+            try {
+                const response = await fetch('/api/mailgun/stats');
+                console.log('Stats Response Status:', response.status);
+                
+                const data = await response.json();
+                console.log('Stats Data:', data);
+                
+                if (response.ok) {
+                    showResult('✅ Stats API Success', {
+                        deliveryRate: data.rates?.deliveryRate,
+                        openRate: data.rates?.openRate,
+                        totals: data.totals
+                    });
+                } else {
+                    showResult('❌ Stats API Error', data, true);
+                }
+            } catch (error) {
+                console.error('Stats API Error:', error);
+                showResult('❌ Stats API Network Error', { error: error.message }, true);
+            }
+        }
+        
+        async function testSuppressions() {
+            console.log('Testing Suppressions API...');
+            try {
+                const response = await fetch('/api/mailgun/suppressions');
+                console.log('Suppressions Response Status:', response.status);
+                
+                const data = await response.json();
+                console.log('Suppressions Data:', data);
+                
+                if (response.ok) {
+                    showResult('✅ Suppressions API Success', {
+                        count: data.count,
+                        type: data.type,
+                        sample: data.items?.slice(0, 2) || []
+                    });
+                } else {
+                    showResult('❌ Suppressions API Error', data, true);
+                }
+            } catch (error) {
+                console.error('Suppressions API Error:', error);
+                showResult('❌ Suppressions API Network Error', { error: error.message }, true);
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = 'Results cleared. Click a test button above to see new results...';
+        }
+        
+        // Auto-test on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 Page loaded, running auto-test...');
+            setTimeout(() => {
+                console.log('Running automatic API tests...');
+                testEvents();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

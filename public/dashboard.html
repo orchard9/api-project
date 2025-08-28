@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mailgun Data Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .data-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .data-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: #667eea;
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-content {
+            padding: 1.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .event-item, .domain-item, .suppression-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .event-item:last-child, .domain-item:last-child, .suppression-item:last-child {
+            border-bottom: none;
+        }
+        
+        .event-badge, .domain-badge, .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .event-accepted { background: #d4edda; color: #155724; }
+        .event-delivered { background: #d1ecf1; color: #0c5460; }
+        .event-failed { background: #f8d7da; color: #721c24; }
+        .event-opened { background: #fff3cd; color: #856404; }
+        .event-clicked { background: #e2e3e5; color: #383d41; }
+        
+        .domain-active { background: #d4edda; color: #155724; }
+        .domain-unverified { background: #f8d7da; color: #721c24; }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: #5a67d8;
+        }
+        
+        .meta-info {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        .controls {
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .controls h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .control-group select, .control-group input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .control-group button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .auto-status {
+            margin-left: 10px;
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .auto-status.active {
+            color: #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .data-sections {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📧 Mailgun Dashboard</h1>
+        <p>Live data from your Mailgun account</p>
+    </div>
+    
+    <div class="container">
+        <!-- Stats Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalDomains">-</div>
+                <div class="stat-label">Domains</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="deliveryRate">-</div>
+                <div class="stat-label">Delivery Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="openRate">-</div>
+                <div class="stat-label">Open Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalEvents">-</div>
+                <div class="stat-label">Recent Events</div>
+            </div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <h3>🎛️ Data Controls</h3>
+            <div class="control-group">
+                <label>Event Type:</label>
+                <select id="eventTypeFilter">
+                    <option value="">All Events</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="failed">Failed</option>
+                    <option value="opened">Opened</option>
+                    <option value="clicked">Clicked</option>
+                </select>
+                
+                <label>Limit:</label>
+                <input type="number" id="eventLimit" value="20" min="1" max="300">
+                
+                <button onclick="refreshEvents()">Refresh Events</button>
+                <button onclick="refreshAllData()">Refresh All</button>
+                
+                <div style="margin-left: 2rem; display: flex; align-items: center;">
+                    <label>Auto-Refresh:</label>
+                    <label class="toggle-switch" style="margin-left: 0.5rem;">
+                        <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()">
+                        <span class="slider"></span>
+                    </label>
+                    <span id="autoStatus" class="auto-status">Off (Manual)</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Sections -->
+        <div class="data-sections">
+            <!-- Recent Events -->
+            <div class="data-section">
+                <div class="section-header">
+                    📬 Recent Events
+                    <button class="refresh-btn" onclick="loadEvents()">↻</button>
+                </div>
+                <div class="section-content" id="eventsContent">
+                    <div class="loading">
+                        <span class="spinner"></span>Loading events...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Domains -->
+            <div class="data-section">
+                <div class="section-header">
+                    🌐 Domains
+                    <button class="refresh-btn" onclick="loadDomains()">↻</button>
+                </div>
+                <div class="section-content" id="domainsContent">
+                    <div class="loading">
+                        <span class="spinner"></span>Loading domains...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="data-section">
+                <div class="section-header">
+                    📊 Statistics (7 days)
+                    <button class="refresh-btn" onclick="loadStats()">↻</button>
+                </div>
+                <div class="section-content" id="statsContent">
+                    <div class="loading">
+                        <span class="spinner"></span>Loading stats...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Suppressions -->
+            <div class="data-section">
+                <div class="section-header">
+                    🚫 Suppressions (Bounces)
+                    <button class="refresh-btn" onclick="loadSuppressions()">↻</button>
+                </div>
+                <div class="section-content" id="suppressionsContent">
+                    <div class="loading">
+                        <span class="spinner"></span>Loading suppressions...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Removed duplicate DOMContentLoaded listener
+        
+        async function loadEvents() {
+            const eventType = document.getElementById('eventTypeFilter').value;
+            const limit = document.getElementById('eventLimit').value || 20;
+            
+            // Show loading state
+            document.getElementById('eventsContent').innerHTML = `
+                <div class="loading">
+                    <span class="spinner"></span>Loading events...
+                </div>
+            `;
+            
+            try {
+                let url = `/api/mailgun/events?limit=${limit}`;
+                if (eventType) url += `&event_type=${eventType}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('totalEvents').textContent = data.count;
+                    
+                    const eventsHtml = data.events.map(event => `
+                        <div class="event-item">
+                            <div>
+                                <span class="event-badge event-${event.event}">${event.event}</span>
+                                <strong>${event.recipient}</strong>
+                            </div>
+                            <div style="margin-top: 0.5rem; color: #666;">
+                                From: ${event.from}<br>
+                                Subject: ${event.subject}
+                            </div>
+                            <div class="meta-info">
+                                ${new Date(event.timestamp).toLocaleString()} • 
+                                ${event.country} ${event.region} ${event.city}
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('eventsContent').innerHTML = eventsHtml || '<p>No events found</p>';
+                } else {
+                    throw new Error(data.error || 'Failed to load events');
+                }
+            } catch (error) {
+                console.error('Events loading error:', error);
+                document.getElementById('eventsContent').innerHTML = `
+                    <div class="error-message">
+                        Error loading events: ${error.message}
+                        <br><button onclick="loadEvents()" style="margin-top: 10px; padding: 5px 10px; background: #667eea; color: white; border: none; border-radius: 4px;">Retry</button>
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadDomains() {
+            try {
+                const response = await fetch('/api/mailgun/domains');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('totalDomains').textContent = data.count;
+                    
+                    const domainsHtml = data.domains.map(domain => `
+                        <div class="domain-item">
+                            <div>
+                                <strong>${domain.name}</strong>
+                                <span class="domain-badge domain-${domain.state}">${domain.state}</span>
+                            </div>
+                            <div class="meta-info">
+                                Type: ${domain.type} • 
+                                Created: ${new Date(domain.created_at).toLocaleDateString()}
+                                <br>
+                                SPF: ${domain.spf_valid ? '✅' : '❌'} • 
+                                DKIM: ${domain.dkim_valid ? '✅' : '❌'}
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('domainsContent').innerHTML = domainsHtml || '<p>No domains found</p>';
+                } else {
+                    throw new Error(data.error || 'Failed to load domains');
+                }
+            } catch (error) {
+                document.getElementById('domainsContent').innerHTML = `
+                    <div class="error-message">Error loading domains: ${error.message}</div>
+                `;
+            }
+        }
+        
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/mailgun/stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('deliveryRate').textContent = data.rates.deliveryRate + '%';
+                    document.getElementById('openRate').textContent = data.rates.openRate + '%';
+                    
+                    const statsHtml = `
+                        <div style="margin-bottom: 1rem;">
+                            <h4>📈 7-Day Totals</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
+                                <div><strong>${data.totals.accepted.toLocaleString()}</strong><br><small>Accepted</small></div>
+                                <div><strong>${data.totals.delivered.toLocaleString()}</strong><br><small>Delivered</small></div>
+                                <div><strong>${data.totals.failed.toLocaleString()}</strong><br><small>Failed</small></div>
+                                <div><strong>${data.totals.opened.toLocaleString()}</strong><br><small>Opened</small></div>
+                                <div><strong>${data.totals.clicked.toLocaleString()}</strong><br><small>Clicked</small></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4>📊 Performance Rates</h4>
+                            <div style="margin-top: 0.5rem;">
+                                <div>Delivery Rate: <strong>${data.rates.deliveryRate}%</strong></div>
+                                <div>Open Rate: <strong>${data.rates.openRate}%</strong></div>
+                                <div>Click Rate: <strong>${data.rates.clickRate}%</strong></div>
+                                <div>Bounce Rate: <strong>${data.rates.bounceRate}%</strong></div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.getElementById('statsContent').innerHTML = statsHtml;
+                } else {
+                    throw new Error(data.error || 'Failed to load stats');
+                }
+            } catch (error) {
+                document.getElementById('statsContent').innerHTML = `
+                    <div class="error-message">Error loading stats: ${error.message}</div>
+                `;
+            }
+        }
+        
+        async function loadSuppressions() {
+            try {
+                const response = await fetch('/api/mailgun/suppressions?type=bounces');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const suppressionsHtml = data.items.slice(0, 20).map(item => `
+                        <div class="suppression-item">
+                            <div><strong>${item.address}</strong></div>
+                            <div class="meta-info">
+                                Reason: ${item.reason}<br>
+                                Code: ${item.code} • 
+                                Date: ${new Date(item.created_at).toLocaleDateString()}
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('suppressionsContent').innerHTML = 
+                        suppressionsHtml || '<p>No suppressions found</p>';
+                } else {
+                    throw new Error(data.error || 'Failed to load suppressions');
+                }
+            } catch (error) {
+                document.getElementById('suppressionsContent').innerHTML = `
+                    <div class="error-message">Error loading suppressions: ${error.message}</div>
+                `;
+            }
+        }
+        
+        function refreshEvents() {
+            loadEvents();
+        }
+        
+        function refreshAllData() {
+            loadEvents();
+            loadDomains();
+            loadStats();
+            loadSuppressions();
+        }
+        
+        // Auto-refresh management
+        let autoRefreshInterval = null;
+        let autoRefreshEnabled = false;
+        
+        function toggleAutoRefresh() {
+            const toggle = document.getElementById('autoRefreshToggle');
+            const status = document.getElementById('autoStatus');
+            
+            autoRefreshEnabled = toggle.checked;
+            
+            if (autoRefreshEnabled) {
+                // Start auto-refresh every 5 minutes
+                autoRefreshInterval = setInterval(refreshAllData, 5 * 60 * 1000);
+                status.textContent = 'On (5 min)';
+                status.classList.add('active');
+                
+                // Show notification
+                console.log('🔄 Auto-refresh enabled: Data will update every 5 minutes');
+            } else {
+                // Stop auto-refresh
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+                status.textContent = 'Off (Manual)';
+                status.classList.remove('active');
+                
+                // Show notification
+                console.log('⏹️ Auto-refresh disabled: Use manual refresh buttons');
+            }
+        }
+        
+        // Initialize with auto-refresh off
+        function initializeAutoRefresh() {
+            const toggle = document.getElementById('autoRefreshToggle');
+            const status = document.getElementById('autoStatus');
+            
+            toggle.checked = false;
+            autoRefreshEnabled = false;
+            status.textContent = 'Off (Manual)';
+            status.classList.remove('active');
+        }
+        
+        // Call initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAutoRefresh();
+            refreshAllData();
+        });
+    </script>
+</body>
+</html>

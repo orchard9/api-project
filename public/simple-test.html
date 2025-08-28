@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple JS Test</title>
+</head>
+<body>
+    <h1>JavaScript Test</h1>
+    <button onclick="testAlert()">Click Me</button>
+    <div id="output">Waiting for JavaScript...</div>
+    
+    <script>
+        console.log('JavaScript is running!');
+        document.getElementById('output').innerHTML = 'JavaScript is working! ✅';
+        
+        function testAlert() {
+            alert('JavaScript functions are working!');
+            document.getElementById('output').innerHTML = 'Button clicked! JavaScript is fully functional! 🎉';
+        }
+        
+        // Test fetch
+        setTimeout(() => {
+            console.log('Testing fetch...');
+            fetch('/health')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Fetch works!', data);
+                    document.getElementById('output').innerHTML += '<br>Fetch API works! Server connected! 🌐';
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    document.getElementById('output').innerHTML += '<br>Fetch failed: ' + error.message;
+                });
+        }, 1000);
+    </script>
+</body>
+</html>
