@@ -434,6 +434,149 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Test email with proper encoding
+app.post('/debug/send-test-email', async (req, res) => {
+  try {
+    const { recipient } = req.body;
+    
+    if (!recipient) {
+      return res.status(400).json({ error: 'Recipient email required' });
+    }
+
+    const baseUrl = 'https://api.mailgun.net/v3';
+    const apiKey = process.env.MAILGUN_API_KEY;
+    const domain = process.env.MAILGUN_DOMAIN || 'mg.erosmate.ai';
+    
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Mailgun API key not configured' });
+    }
+
+    const testHtml = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html style="padding:1.5rem;background-color:rgb(243,244,246)" dir="ltr" lang="en-US">
+<head>
+  <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/>
+  <style>* { font-family: Arial, sans-serif; }</style>
+</head>
+<body style="max-width:768px;margin-left:auto;margin-right:auto">
+  <h1 style="color:rgb(55,65,81);text-align:center">✅ Email Encoding Fix Test</h1>
+  <p style="color:rgb(107,114,128);text-align:center;margin:20px 0">
+    This email should NOT show =3D in the rendered version.
+  </p>
+  <div style="background-color:rgb(255,255,255);padding:20px;border-radius:8px;margin:20px 0">
+    <p><strong>Test Elements:</strong></p>
+    <ul>
+      <li>Link: <a href="https://example.com" style="color:rgb(59,130,246);text-decoration:none" target="_blank">Click here</a></li>
+      <li>Style attribute: <span style="color:rgb(239,68,68);font-weight:bold">Red text</span></li>
+      <li>Multiple attributes: <div style="color:rgb(34,197,94);background-color:rgb(240,253,244);padding:10px;border-radius:4px">Green background</div></li>
+    </ul>
+  </div>
+  <p style="font-size:12px;color:rgb(107,114,128);text-align:center;margin-top:30px">
+    If you see =3D anywhere in this email, the encoding fix didn't work.
+  </p>
+</body>
+</html>`;
+
+    // Try MIME message approach to force 8-bit encoding
+    const mimeMessage = [
+      `From: Test <noreply@${domain}>`,
+      `To: ${recipient}`,
+      `Subject: ✅ MIME Encoding Fix Test`,
+      `Content-Type: text/html; charset=utf-8`,
+      `Content-Transfer-Encoding: 8bit`,  // Force 8-bit
+      ``,
+      testHtml
+    ].join('\r\n');
+
+    const FormData = require('form-data');
+    const formData = new FormData();
+    formData.append('to', recipient);
+    formData.append('message', mimeMessage);
+
+    const response = await axios.post(
+      `${baseUrl}/${domain}/messages.mime`,
+      formData,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`api:${apiKey}`).toString('base64')}`,
+          ...formData.getHeaders()
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Test email sent with 8-bit encoding',
+      mailgunId: response.data.id,
+      recipient,
+      instructions: [
+        '1. Check your email inbox',
+        '2. Look for =3D in the rendered email (should be NONE)',
+        '3. Compare with "Show Original" raw source',
+        '4. If no =3D appears, the fix works!'
+      ]
+    });
+
+  } catch (error) {
+    console.error('Test email error:', error.message);
+    res.status(500).json({
+      error: 'Failed to send test email',
+      details: error.message
+    });
+  }
+});
+
+// Email encoding debug endpoint
+app.get('/debug/email-headers', async (req, res) => {
+  try {
+    const baseUrl = 'https://api.mailgun.net/v3';
+    const apiKey = process.env.MAILGUN_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(500).json({
+        error: 'Mailgun API key not configured'
+      });
+    }
+
+    // Get recent events with full message details
+    const response = await axios.get(`${baseUrl}/events?limit=5&event=delivered`, {
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`api:${apiKey}`).toString('base64')}`
+      }
+    });
+
+    const events = response.data.items || [];
+    
+    const debugInfo = events.map(event => ({
+      id: event.id,
+      timestamp: new Date(event.timestamp * 1000).toISOString(),
+      recipient: event.recipient,
+      subject: event.message?.headers?.subject || 'N/A',
+      contentType: event.message?.headers['content-type'] || 'Not specified',
+      contentTransferEncoding: event.message?.headers['content-transfer-encoding'] || 'Not specified',
+      hasEncodingIssue: event.message?.headers['content-transfer-encoding']?.includes('quoted-printable') || false
+    }));
+
+    res.json({
+      success: true,
+      message: 'Recent email headers analysis',
+      totalEvents: events.length,
+      debugInfo,
+      recommendations: [
+        'Check if Content-Transfer-Encoding is quoted-printable',
+        'Look for =3D in actual email rendering vs raw source',
+        'Verify Content-Type includes proper charset'
+      ]
+    });
+
+  } catch (error) {
+    console.error('Debug endpoint error:', error.message);
+    res.status(500).json({
+      error: 'Failed to fetch debug information',
+      details: error.message
+    });
+  }
+});
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
